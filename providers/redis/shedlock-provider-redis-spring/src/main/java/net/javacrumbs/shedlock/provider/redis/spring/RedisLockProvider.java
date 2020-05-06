@@ -95,10 +95,15 @@ public class RedisLockProvider implements LockProvider {
     @NonNull
     public Optional<SimpleLock> lock(@NonNull LockConfiguration lockConfiguration) {
         String key = buildKey(lockConfiguration.getName());
+        // 获取过期时间
         Expiration expiration = getExpiration(lockConfiguration.getLockAtMostUntil());
+        // 加锁
         if (TRUE.equals(tryToSetExpiration(redisTemplate, key, expiration, SET_IF_ABSENT))) {
+            // 加锁成功
+            // 创建 RedisLock 类型对象
             return Optional.of(new RedisLock(key, redisTemplate, lockConfiguration));
         } else {
+            // 加锁失败
             return Optional.empty();
         }
     }
@@ -140,13 +145,18 @@ public class RedisLockProvider implements LockProvider {
 
 
     String buildKey(String lockName) {
+        // keyPrefix 默认值：job-lock
+        // environment 默认值：default
         return String.format("%s:%s:%s", keyPrefix, environment, lockName);
     }
 
     private static Boolean tryToSetExpiration(StringRedisTemplate template, String key, Expiration expiration, SetOption option) {
         return template.execute(connection -> {
+            // 序列化key
             byte[] serializedKey = ((RedisSerializer<String>) template.getKeySerializer()).serialize(key);
+            // 序列化value
             byte[] serializedValue = ((RedisSerializer<String>) template.getValueSerializer()).serialize(String.format("ADDED:%s@%s", toIsoString(ClockProvider.now()), getHostname()));
+            // 设置key到redis
             return connection.set(serializedKey, serializedValue, expiration, option);
         }, false);
     }

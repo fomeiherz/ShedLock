@@ -35,6 +35,7 @@ class MethodProxyScheduledLockAdvisor extends AbstractPointcutAdvisor {
     private final Pointcut pointcut = new ComposablePointcut(methodPointcutFor(net.javacrumbs.shedlock.core.SchedulerLock.class))
         .union(methodPointcutFor(SchedulerLock.class));
 
+    // 通知 Advice
     private final Advice advice;
 
     MethodProxyScheduledLockAdvisor(SpringLockConfigurationExtractor lockConfigurationExtractor, LockingTaskExecutor lockingTaskExecutor) {
@@ -77,10 +78,12 @@ class MethodProxyScheduledLockAdvisor extends AbstractPointcutAdvisor {
         @Override
         public Object invoke(MethodInvocation invocation) throws Throwable {
             Class<?> returnType = invocation.getMethod().getReturnType();
+            // 返回类型只支持 void 基本类型
             if (returnType.isPrimitive() && !void.class.equals(returnType)) {
                 throw new LockingNotSupportedException("Can not lock method returning primitive value");
             }
 
+            // 通过 @SchedulerLock 注解的配置创建 LockConfiguration 对象
             LockConfiguration lockConfiguration = lockConfigurationExtractor.getLockConfiguration(invocation.getThis(), invocation.getMethod()).get();
             TaskResult<Object> result = lockingTaskExecutor.executeWithLock(invocation::proceed, lockConfiguration);
 

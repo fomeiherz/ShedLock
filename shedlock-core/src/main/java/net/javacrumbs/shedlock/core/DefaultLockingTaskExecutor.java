@@ -60,7 +60,9 @@ public class DefaultLockingTaskExecutor implements LockingTaskExecutor {
     @Override
     @NonNull
     public <T> TaskResult<T> executeWithLock(@NonNull TaskWithResult<T> task, @NonNull LockConfiguration lockConfig) throws Throwable {
+        // 加锁
         Optional<SimpleLock> lock = lockProvider.lock(lockConfig);
+        // 获取锁名字
         String lockName = lockConfig.getName();
 
         if (alreadyLockedBy(lockName)) {
